@@ -20,8 +20,11 @@
     obstaculo_x_ori db 250
     obstaculo_fig db 0
 
+    PUBLIC score_actual
     score_actual     db 0
     va_a_sumar_punto db 0 ; Flag que determina si el jugador va a sumar un punto luego de que el dino salto
+    PUBLIC Scoreas
+    scoreas          db '000',0dh,0ah
 
 .code
     EXTRN limpiar_pantalla:PROC ; -> LOGIC.ASM
@@ -40,6 +43,8 @@
     EXTRN score:PROC            ; -> SCORE.ASM
 
     EXTRN GAME_OVER:PROC        ; -> MAIN.ASM
+
+    EXTRN reg2ascii:PROC
 
     PUBLIC JUEGO
 
@@ -72,7 +77,7 @@ inicio:
 
     mov bl, obstaculo_x_ori        ; SETEO EL OBSTACULO EN EL X ORIGINAL PARA CUANDO VUELVE DEL GAME OVER
     mov obstaculo_x, bl
-    mov byte ptr score_actual, 0 ; SE RESETEA EL SCORE A 0 PARA CUANDO VUELVE DEL GAME OVER 
+    ;mov byte ptr score_actual, 0 ; SE RESETEA EL SCORE A 0 PARA CUANDO VUELVE DEL GAME OVER 
 
 nuevo_obs:
     xor ax,ax
@@ -295,5 +300,16 @@ finSp:
     POP AX
     ret
 borro_sprite endp
+
+Score_Ascii proc
+
+mov al,score_actual
+push ax
+mov dx, offset scoreas
+push dx
+call reg2ascii
+
+Score_ascii endp
+
 
 end

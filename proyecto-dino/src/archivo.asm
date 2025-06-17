@@ -1,11 +1,10 @@
 .8086
 .MODEL SMALL
 .STACK 100h
-
 .DATA
     nombreArchivo DB "records.txt", 00H
     puntajesArc   DB "JP | PUN", 0dh, 0ah
-    mensaje       DB "XXX 000", 0dh, 0ah ,24h
+    ;mensaje       DB "XXX 000", 0dh, 0ah ,24h
     handle        DW ?
     filehandler db 00h,00h
     readchar db 20h
@@ -13,14 +12,15 @@
     charactererror db "Error de lectura de caracter", 0dh, 0ah, '$'
     nextpage db "Presione <Enter> para seguir, otra tecla para salir...", "$"
     currentline db 01h
-
+    divisores db 100,10,1
+    EXTRN scoreas
 .CODE
 EXTRN limpiar_pantalla:PROC ; -> LOGIC.ASM
 
 PUBLIC CREA_RECORDS
 PUBLIC ESCRIBIR_RECORDS
 PUBLIC LEER_RECORDS
-
+PUBLIC reg2ascii
 CREA_RECORDS PROC
     PUSH AX
     PUSH BX
@@ -40,11 +40,11 @@ CREA_RECORDS PROC
     ; --------------------------------------
     ; Escribir en el archivo
     ; --------------------------------------
-    mov di, 10
+    mov di, 5
 loop_escritura:
     cmp di, 0
     je fin_escritura
-    LEA DX, mensaje        ; Dirección del mensaje
+    LEA DX, scoreas        ; Dirección del mensaje
     PUSH DX
     CALL ESCRIBIR_RECORDS
     JC ERROR
@@ -85,7 +85,7 @@ ESCRIBIR_RECORDS PROC
     MOV AH, 40h            ; Función DOS: Escribir archivo
     MOV BX, handle         ; Handle del archivo
     MOV DX, SS:[BP+4]      ; Dirección del mensaje
-    MOV CX, 9              ; Cantidad de bytes a escribir (ajustar según el mensaje real)
+    MOV CX, 5             ; Cantidad de bytes a escribir (ajustar según el mensaje real)
     INT 21h
 
     POP DX
@@ -187,6 +187,38 @@ Mov  bx, word ptr [filehandler] ;CIERRA ARCHIVO
 ret
 
 leeTXT endp
+
+reg2ascii proc
+    push bp
+    mov bp, sp
+    push bx
+    push cx
+    push si
+    push ax
+
+    xor ax, ax
+    mov al, [bp + 6] 
+    mov si, [bp + 4] 
+    mov bx, offset divisores 
+    mov cx, 3 ; cx = 3  
+convertir:
+    mov dl,[bx]
+    div dl 
+    add al,30h
+    mov [si], al  
+    inc bx 
+    inc si 
+    mov al,ah
+    xor ah,ah 
+loop convertir
+
+    pop ax
+    pop si
+    pop cx
+    pop bx
+    pop bp
+    ret 4 
+reg2ascii endp
 
 
 END
