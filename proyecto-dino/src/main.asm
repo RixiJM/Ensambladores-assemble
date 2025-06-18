@@ -9,7 +9,7 @@ EXTRN scoreas:BYTE
     EXTRN dibujar_game_over:PROC     ; -> MENU.ASM
     EXTRN dibujar_ganaste:PROC     ; -> MENU.ASM
     EXTRN juego:PROC                 ; -> DINO.ASM
-    ;EXTRN CREA_RECORDS:PROC          ; -> ARCHIVO.ASM
+    EXTRN CREA_RECORDS:PROC          ; -> ARCHIVO.ASM
     EXTRN modo_texto:PROC            ; -> LOGIC.ASM
     EXTRN Score_Ascii:PROC
 
