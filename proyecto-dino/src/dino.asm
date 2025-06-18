@@ -25,6 +25,7 @@
     moneda_x_ori db 255
 
     score_actual     db 0
+    scoreas          db '000',0dh,0ah
     moneda_colision  db 0
 
     senal_color db 85h  ;(VIOLETA)
@@ -49,6 +50,8 @@
 
     EXTRN GAME_OVER:PROC        ; -> MAIN.ASM
     EXTRN GAME_WIN:PROC         ; -> MAIN.ASM
+
+    EXTRN reg2ascii:PROC
 
     PUBLIC JUEGO
 
@@ -81,7 +84,7 @@ inicio:
     CALL resetMoneda
     mov bl, obstaculo_x_ori        ; SETEO EL OBSTACULO EN EL X ORIGINAL PARA CUANDO VUELVE DEL GAME OVER
     mov obstaculo_x, bl
-    mov byte ptr score_actual, 0 ; SE RESETEA EL SCORE A 0 PARA CUANDO VUELVE DEL GAME OVER 
+    ;mov byte ptr score_actual, 0 ; SE RESETEA EL SCORE A 0 PARA CUANDO VUELVE DEL GAME OVER 
 
 nuevo_obs:
     xor ax,ax
@@ -355,6 +358,17 @@ finSp:
     POP AX
     ret
 borro_sprite endp
+
+Score_Ascii proc
+
+mov al,score_actual
+push ax
+mov dx, offset scoreas
+push dx
+call reg2ascii
+
+Score_ascii endp
+
 
 ;-------------------------------------------------------------------------------------------------
 ;Función dibujar 

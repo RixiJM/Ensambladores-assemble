@@ -1,14 +1,17 @@
 .8086
 .model small
 .stack 100h
-
+.data
+EXTRN score_actual:BYTE
+EXTRN scoreas:BYTE
 .code
     EXTRN menu:PROC                  ; -> MENU.ASM
     EXTRN dibujar_game_over:PROC     ; -> MENU.ASM
     EXTRN dibujar_ganaste:PROC     ; -> MENU.ASM
     EXTRN juego:PROC                 ; -> DINO.ASM
-    ;EXTRN CREA_RECORDS:PROC          ; -> ARCHIVO.ASM
+    EXTRN CREA_RECORDS:PROC          ; -> ARCHIVO.ASM
     EXTRN modo_texto:PROC            ; -> LOGIC.ASM
+    EXTRN Score_Ascii:PROC
 
     PUBLIC GAME_OVER
     PUBLIC GAME_WIN
@@ -19,9 +22,8 @@ main proc
     mov es, ax
 
     CALL modo_texto ; SETEO PANTALLA EN MODO VIDEO - TEXTO y OCULTO CURSOR
-
-    ;CALL CREA_RECORDS ; CREO ARCHIVO PARA GUARDAR RECORDS
-    ;QEPD
+    ; call Score_Ascii
+    ; CALL CREA_RECORDS ; CREO ARCHIVO PARA GUARDAR RECORDS
 
 menu_principal:
     call menu
@@ -45,7 +47,18 @@ main endp
 game_over proc
         CALL modo_texto ; RESETEO PANTALLA
 
+        
+        call Score_Ascii
+        
+        mov ah,9
+        lea dx, scoreas
+        int 21h
+
+        CALL CREA_RECORDS
+
         call dibujar_game_over
+
+        mov byte ptr score_actual, 0
 
         call main
         RET
