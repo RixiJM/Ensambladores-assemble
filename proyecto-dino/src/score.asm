@@ -9,7 +9,7 @@
 
 	scorejugador db 00h ; SCOREJUGADOR es el valor de score que se quiere mostrar en pantalla
 	
-	cursor					dw 00h, 00h ; CURSOR se utiliza para posicionar el cursor en la impresión del dígito del score
+	cursor		  dw 00h, 00h ; CURSOR se utiliza para posicionar el cursor en la impresión del dígito del score
 	punteronumero dw 00h, 00h ; PUNTERONUMERO es la variable cuyo valor es el offset del número a mostrar
 	punterocursor	dw 00h, 00h ; PUNTEROCRURSOR el para posicionar cada línea de impresión del digito del score
 

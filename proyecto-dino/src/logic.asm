@@ -92,12 +92,15 @@ delay endp
 
 delay_new proc
     push cx
+    push ax
 
     mov cx, 0FFFFh ; me dejo de andar el de arriba :(
+    sub cx, ax
 delay_loop:
     nop
     loop delay_loop
 
+    pop ax
     pop cx
     ret
 delay_new endp

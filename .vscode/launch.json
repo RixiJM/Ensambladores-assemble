@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run in DOSBox",
+        "type": "node",  // Solo para "engañar" al launch.json, no importa el tipo porque no se depura
+        "request": "launch",
+        "program": "${workspaceFolder}\\exec.bat",
+        "preLaunchTask": "Ejecutar en DOSBox",
+        "console": "integratedTerminal",
+        "stopOnEntry": false
+      }
+    ]
+  }

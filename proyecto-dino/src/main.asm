@@ -7,12 +7,14 @@ EXTRN scoreas:BYTE
 .code
     EXTRN menu:PROC                  ; -> MENU.ASM
     EXTRN dibujar_game_over:PROC     ; -> MENU.ASM
+    EXTRN dibujar_ganaste:PROC     ; -> MENU.ASM
     EXTRN juego:PROC                 ; -> DINO.ASM
-    EXTRN CREA_RECORDS:PROC          ; -> ARCHIVO.ASM
+    ;EXTRN CREA_RECORDS:PROC          ; -> ARCHIVO.ASM
     EXTRN modo_texto:PROC            ; -> LOGIC.ASM
     EXTRN Score_Ascii:PROC
 
     PUBLIC GAME_OVER
+    PUBLIC GAME_WIN
 
 main proc
     mov ax, @data
@@ -61,5 +63,14 @@ game_over proc
         call main
         RET
 game_over endp
+
+game_win proc
+        CALL modo_texto ; RESETEO PANTALLA
+
+        call dibujar_ganaste
+
+        call main
+        RET
+game_win endp
 
 end

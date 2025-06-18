@@ -9,16 +9,16 @@
 
       SPRITE_SHIP       DB 02H,00H,07H,00H,05H,00H,05H,00H,15H,40H,97H,48H,9FH
                         DB 0C8H,0BFH,0E8H,0FFH,0F8H,0EFH,0B8H,0CFH,98H,82H,08H
-
+      
       SPRITE_PATINETA db 0C0h, 03h, 3Fh, 0FCh, 10h, 08h, 28h, 14h, 10h, 08h ;base 2 bytes, Altura 5 pix, color 04h (rojo)
 
       SPRITE_PAT_MOV db  0C0h, 03h, 3Fh, 0FCh, 28h, 14h, 00h, 00h, 28h, 14h ;base 2 bytes, Altura 5 pix, color 04h (rojo)
-
+      
       SPRITE_MONEDA db   01h,0C0h,03h,0E0h,07h,70h,06h,30h,07h,70h,03h,0E0h,01h,0C0h ; base 2 bytes, altura 7 pix, color 44h (amarillo)
 
 
       SPRITE_SENAL db  07h, 0E0h, 0Fh, 0F0h, 1Fh, 0F8h, 3Fh, 0FCh, 3Fh, 0FCh, 3Fh, 0FCh, 3Fh, 0FCh, 3Fh, 0FCh, 1Fh, 0F8h, 0Fh, 0F0h, 07h, 0E0h, 01h, 80h, 01h, 80h, 01h, 80h, 01h, 80h, 01h, 80h, 01h, 80h
-
+      
       SPRITE_CACTUS db 01h,80h,03h,0C0h,03h,0C0h,03h,0C6h,03h,0CFh,43h,0CFh,0E3h,0CFh,0E3h,0CFh,0E3h,0CFh,0FFh,0CFh,7Fh,0CFh,03h,0FFh,03h,0FEh,03h,0FEh,03h,0F8h,03h,0C0h,03h,0C0h,03h,0C0h
 
       fondob            db 00h, 20h, 00h, 00h, 00h, 02h, 80h, 00h, 00h, 00h, 00h, 00h, 00h
@@ -87,44 +87,36 @@
 ;-------------------------------------------------------------------------------------------------
 FONDOSP proc
 ;;; MONTAÑAS
+      PUSH DI
+
+      MOV DI, 0
+dibujar_montanas:
       PUSH 07H                  ;(Marron)
       PUSH OFFSET fondob        ;(OFFSET DEL SPRITE)
-      PUSH 0                  ;COORDENADA X
-      PUSH 80                   ;COORDENADA Y
+      PUSH DI                   ;COORDENADA X
+      PUSH 70                   ;COORDENADA Y
 
       PUSH 13               ;BASE EN BYTES, LA NAVE SON 2 BYTES DE LARGO.
       PUSH 30                 ;ALTURA EN PIXELES, (12 DE ALTO).
       CALL DRAW_SPRITE
 
-      PUSH 07H                  ;(Marron)
-      PUSH OFFSET fondob        ;(OFFSET DEL SPRITE)
-      PUSH 100                  ;COORDENADA X
-      PUSH 80                   ;COORDENADA Y
-
-      PUSH 13               ;BASE EN BYTES, LA NAVE SON 2 BYTES DE LARGO.
-      PUSH 30                 ;ALTURA EN PIXELES, (12 DE ALTO).
-      CALL DRAW_SPRITE
-
-      PUSH 07H                  ;(Marron)
-      PUSH OFFSET fondob        ;(OFFSET DEL SPRITE)
-      PUSH 200                  ;COORDENADA X
-      PUSH 80                   ;COORDENADA Y
-
-      PUSH 13               ;BASE EN BYTES, LA NAVE SON 2 BYTES DE LARGO.
-      PUSH 30                 ;ALTURA EN PIXELES, (12 DE ALTO).
-      CALL DRAW_SPRITE
+      ADD DI, 100
+      CMP DI, 200
+      JA continua_fondo
+jmp dibujar_montanas
 ;;; MONTAÑAS
-
+continua_fondo:
 ;;; LINEA DE ABAJO
       PUSH 0fH                ;(BLANCO)
       PUSH OFFSET SPRITE_LINEA ;(OFFSET DEL SPRITE)
       PUSH 0                 ;COORDENADA X
-      PUSH 150               ;COORDENADA Y
+      PUSH 143               ;COORDENADA Y
 
       PUSH 40                  ;BASE EN BYTES, LA NAVE SON 2 BYTES DE LARGO.
       PUSH 1                 ;ALTURA EN PIXELES, (12 DE ALTO).
       CALL DRAW_SPRITE
-
+      
+      POP DI
       RET
 ;;; LINEA DE ABAJO
 FONDOSP ENDP
@@ -157,26 +149,29 @@ DINOSP ENDP
 ;-------------------------------------------------------------------------------------------------
 OBSTACULOSP PROC
 ;;; OBSTACULO
+      push ax
+      PUSH BX
       PUSH DX
       push di
-
-      CMP SI, 3
-      JBE FACIL
+      
+      CMP SI, 2
+      JBE CACTUS
+      CMP SI, 4
+      JBE SENAL
       CMP SI, 6
-      JBE INTERMEDIO
+      JBE CACTUS
+      CMP SI, 8
+      JBE SENAL
       LEA DX, SPRITE_SHIP
-      mov di,12
-      ;mov al,66h
+      mov di, 12
       JMP IMPRIME
-FACIL:
+CACTUS:
       LEA DX, SPRITE_CACTUS
-      mov di,17
-      ;mov al,02h
+      mov di, 17
       JMP IMPRIME
-INTERMEDIO:
+SENAL:
       LEA DX, SPRITE_SENAL
-      mov di,17
-      ;mov al,85h
+      mov di, 17
 IMPRIME:
       xor ah,ah
       PUSH AX                 ;COLOR
@@ -185,11 +180,13 @@ IMPRIME:
       PUSH CX                 ;COORDENADA Y (120)
 
       PUSH 2                  ;BASE EN BYTES, LA NAVE SON 2 BYTES DE LARGO.
-      PUSH di                 ;ALTURA EN PIXELES, (12 DE ALTO).
+      PUSH DI                 ;ALTURA EN PIXELES, (12 DE ALTO).
       CALL DRAW_SPRITE
 FIN:
-      pop di
+      POP DI
       POP DX
+      POP BX
+      POP AX
       RET
 ;;; OBSTACULO
 OBSTACULOSP ENDP
@@ -203,6 +200,7 @@ OBSTACULOSP ENDP
 PATINETASP PROC
 ;;; PATINETA
       PUSH DX
+      PUSH Di
       
       cmp di, 1
       je movimiento_pat
@@ -220,6 +218,7 @@ imprime_patineta:
       PUSH 5                  ;ALTURA EN PIXELES, (12 DE ALTO).
       CALL DRAW_SPRITE
 
+      POP DI
       POP DX
       RET
 ;;; PATINETA
@@ -233,10 +232,10 @@ PATINETASP ENDP
 ;-------------------------------------------------------------------------------------------------
 MONEDASP PROC
 ;;; MONEDA
-      PUSH 44h                 ;COLOR
+      PUSH AX                  ;COLOR
       PUSH OFFSET SPRITE_MONEDA ;(OFFSET DEL SPRITE)
-      PUSH BX                 ;COORDENADA X (30)
-      PUSH CX                 ;COORDENADA Y (120)
+      PUSH BX                   ;COORDENADA X (30)
+      PUSH CX                   ;COORDENADA Y (120)
 
       PUSH 2                  ;BASE EN BYTES, LA NAVE SON 2 BYTES DE LARGO.
       PUSH 7                  ;ALTURA EN PIXELES, (12 DE ALTO).

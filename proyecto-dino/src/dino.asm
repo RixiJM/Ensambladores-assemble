@@ -15,34 +15,41 @@
     pati_y_ori   db 18
 
     obstaculo_color db 02h  ;(VERDE)
-    obstaculo_x db 250
+    obstaculo_x db 255
     obstaculo_y db 120
-    obstaculo_x_ori db 250
+    obstaculo_x_ori db 255
     obstaculo_fig db 0
 
-    PUBLIC score_actual
+    moneda_x db 255
+    moneda_y db 100
+    moneda_x_ori db 255
+
     score_actual     db 0
-    va_a_sumar_punto db 0 ; Flag que determina si el jugador va a sumar un punto luego de que el dino salto
-    PUBLIC Scoreas
     scoreas          db '000',0dh,0ah
+    moneda_colision  db 0
+
+    senal_color db 85h  ;(VIOLETA)
+    ship_color db 66h   ;(CELESTE)
+    cactus_color db 02h ;(VERDE)
+    moneda_color db 44h ;(AMARILLO)
 
 .code
     EXTRN limpiar_pantalla:PROC ; -> LOGIC.ASM
     EXTRN modo_negro:PROC       ; -> LOGIC.ASM
 
-    EXTRN ESPERA:PROC           ; -> ESPERA.ASM
-    EXTRN delay:PROC            ; -> LOGIC.ASM
+    ;EXTRN ESPERA:PROC           ; -> ESPERA.ASM
     EXTRN delay_new:PROC        ; -> LOGIC.ASM
 
     EXTRN FONDOSP:PROC          ; -> SPRITE.ASM
     EXTRN DINOSP:PROC           ; -> SPRITE.ASM
     EXTRN OBSTACULOSP:PROC      ; -> SPRITE.ASM
-    EXTRN PATINETASP:PROC      ; -> SPRITE.ASM
-    EXTRN MONEDASP:PROC      ; -> SPRITE.ASM
+    EXTRN PATINETASP:PROC       ; -> SPRITE.ASM
+    EXTRN MONEDASP:PROC         ; -> SPRITE.ASM
 
     EXTRN score:PROC            ; -> SCORE.ASM
 
     EXTRN GAME_OVER:PROC        ; -> MAIN.ASM
+    EXTRN GAME_WIN:PROC         ; -> MAIN.ASM
 
     EXTRN reg2ascii:PROC
 
@@ -62,7 +69,6 @@ juego proc
     push si
     push di
 
-
     CALL LIMPIAR_PANTALLA
 
     ;----------------
@@ -75,6 +81,7 @@ inicio:
     call MODO_NEGRO ; ES COMO LIMPIAR PANTALLA PERO PARA EL MODO GRAFICO
     call FONDOSP    ; IMPRIMO EL BACKGROUND
 
+    CALL resetMoneda
     mov bl, obstaculo_x_ori        ; SETEO EL OBSTACULO EN EL X ORIGINAL PARA CUANDO VUELVE DEL GAME OVER
     mov obstaculo_x, bl
     ;mov byte ptr score_actual, 0 ; SE RESETEA EL SCORE A 0 PARA CUANDO VUELVE DEL GAME OVER 
@@ -83,16 +90,20 @@ nuevo_obs:
     xor ax,ax
     INT 80h ; ← AL contiene un número entre 0 y 9
     mov si, ax
+    cmp si, 9
+    jne game_loop
+    mov moneda_colision, 1
 game_loop:
     mov al, score_actual
+    cmp al, 250 ; SI LLEGAS A 250 GANAS!
+    jae finJuego 
+    cmp al, 230 ; SI ES 230 YA PUEDE ROMPER EL SCORE
+    jbe monedaValida
+    call resetMoneda
+monedaValida:
     CALL SCORE           ; SE DIBUJA EL SCORE
 
     ; IMPRIMO SPRITES!
-    mov al, dino_color
-    mov bl, dino_x
-    mov cl, dino_y
-    call DINOSP
-
     cmp di, 0
     je mover_pat
     mov di, 0
@@ -100,23 +111,24 @@ game_loop:
 mover_pat:
     mov di, 1
 imprime_pat:
-    mov al, pati_color
-    mov bl, dino_x
-    mov cl, dino_y
-    add cl, pati_y_ori
-    call PATINETASP
+    mov al, dino_color
+    call dibujar_dino
 
-    mov al, obstaculo_color
-    mov bl, obstaculo_x
-    mov cl, obstaculo_y
-    call OBSTACULOSP
+    call obstaculo_color_leer
+    call dibujar_obs
+    
+    cmp moneda_colision, 0
+    je noImprimeMoneda
+    mov al, moneda_color
+    call dibujar_moneda
     ; IMPRIMO SPRITES!
-
+noImprimeMoneda:
     call colision
 
-    ;mov ah, 0           ; USO LA FUNCION ESPERA PARA MANEJAR EL MOVIMIENTO
-    ;call espera
-    call delay_new
+    mov al, score_actual
+    mov dl, al          ; AUMENTA LA VELOCIDAD EXPONENCIALMENTE
+    mul dl
+    call delay_new      ; USO LA FUNCION ESPERA PARA MANEJAR EL MOVIMIENTO
 
     mov ah, 01h         ; LEE LA PULSACION DE TECLA PERO SIN ESPERAR QUE SE PRESIONE ALGO!
     int 16h
@@ -130,9 +142,12 @@ imprime_pat:
 sin_tecla:
     call manejar_salto
     call mover_obstaculo
+    cmp moneda_colision, 0
+    je noMuevoMoneda
+    call mover_moneda
+noMuevoMoneda:
     cmp si, 10
     je nuevo_obs
-    
     jmp game_loop ; TERMINA CON EL 'GAME OVER'
 
 salto:
@@ -140,6 +155,9 @@ salto:
     jmp sin_tecla
 
 finJuego:
+    CALL LIMPIAR_PANTALLA
+    CALL GAME_WIN
+
     pop di
     pop si
     pop dx
@@ -206,7 +224,7 @@ mover_obstaculo proc
     mov al, dino_x
     sub al, 20          ; SI SE PASO POR 20 PIXELES VUELVE AL PRINCIPIO
     cmp obstaculo_x, al
-    jbe resetObs
+    jb resetObs
 
     mov bl, obstaculo_x
     sub bl, 5           ; VELOCIDAD DE MOVIMIENTO DEL OBSTACULO
@@ -223,6 +241,32 @@ finObs:
     ret
 mover_obstaculo endp
 
+mover_moneda proc
+    PUSH AX
+    PUSH BX
+    PUSH CX
+
+    mov ah, 2
+    call borro_sprite
+
+    mov al, dino_x
+    sub al, 20          ; SI SE PASO POR 20 PIXELES VUELVE AL PRINCIPIO
+    cmp moneda_x, al
+    jbe resetMon
+
+    mov bl, moneda_x
+    sub bl, 1           ; VELOCIDAD DE MOVIMIENTO DEL OBSTACULO
+    mov moneda_x, bl
+    jmp finMovMoneda
+resetMon:
+    CALL resetMoneda
+finMovMoneda:
+    POP CX
+    POP BX
+    POP AX
+    ret
+mover_moneda endp
+
 ;-------------------------------------------------------------------------------------------------
 ;Función COLISION 
 ;		Realiza: VERIFICA LA COLISION DE EL OBSTACULO Y EL DINO USANDO EL XY DE LOS MISMOS
@@ -232,6 +276,7 @@ mover_obstaculo endp
 colision proc
     PUSH AX
     PUSH BX
+    PUSH CX
 
     mov al, dino_x
     sub al, 5           ; VALIDO RANGO DE 5 PIXELES A VER SI COLISIONO
@@ -248,19 +293,36 @@ comparaY:
     mov al, dino_y
     cmp al, obstaculo_y
     jne suma_punto
-
-    mov ah, 1
-    call espera
-    CALL GAME_OVER ; Si XY son iguales para ambos SPRITES PIERDE!
+    
+    CALL delay_new
+    CALL delay_new
+    CALL LIMPIAR_PANTALLA 
+    CALL GAME_OVER    ; Si XY son iguales para ambos SPRITES PIERDE!
 no_colisiona:
-    cmp salto_activo, 1
+    cmp salto_activo, 0
     je suma_punto
     jmp continua
 
 suma_punto:
     inc score_actual ; SUPERA EL OBSTACULO, SUMA 1 PUNTO
 
-continua:
+continua:                   ; LOGICA COLISION MONEDA
+    mov al, moneda_x
+    cmp al, dino_x
+    jne finColision
+    mov al, moneda_y
+    cmp al, dino_y
+    jne finColision
+    mov cx, 15    ; CUANTOS PUNTOS DA AGARRAR LA MONEDA
+choqueMoneda:
+    inc score_actual
+loop choqueMoneda
+    mov ah, 2               ; BORRO MONEDA
+    call borro_sprite
+    CALL resetMoneda        ; RESETEO MONEDA
+                            ; FIN LOGICA COLISION MONEDA
+finColision:
+    POP CX
     POP BX
     POP AX
     RET
@@ -281,19 +343,15 @@ borro_sprite PROC
     mov al, 00H             ;(NEGRO)
     cmp ah, 1               ; SI VIENE 1 EN AH BORRO EL OBSTACULO, SI VIENE 0 EL DINO
     je obs
-
-    mov bl, dino_x
-    mov cl, dino_y
-    call DINOSP
-    mov bl, dino_x
-    mov cl, dino_y
-    add cl, pati_y_ori
-    call PATINETASP
+    cmp ah, 2               ; SI VIENE 1 EN AH BORRO EL OBSTACULO, SI VIENE 0 EL DINO
+    je mon
+    call dibujar_dino       ; DIBUJO EL DINO PERO EN NEGRO (LO BORRO)
     jmp finSp
 obs:
-    mov bl, obstaculo_x
-    mov cl, obstaculo_y
-    call OBSTACULOSP
+    call dibujar_obs        ; DIBUJO EL OBS PERO EN NEGRO (LO BORRO)
+    jmp finSp
+mon:
+    call dibujar_moneda     ; DIBUJO EL MONEDA PERO EN NEGRO (LO BORRO)
 finSp:
     POP CX
     POP BX
@@ -312,4 +370,69 @@ call reg2ascii
 Score_ascii endp
 
 
+;-------------------------------------------------------------------------------------------------
+;Función dibujar 
+;		Realiza: 	DIBUJAR LAS FIGURAS
+;		Recibe: 	AL -> COLOR, BL -> POS X, CL -> POS Y
+;		Devuelve: 	NADA
+;-------------------------------------------------------------------------------------------------
+
+dibujar_dino proc
+    mov bl, dino_x
+    mov cl, dino_y
+    call DINOSP
+
+    cmp al, 00H
+    je negroPat
+    mov al, pati_color
+negroPat:
+    mov bl, dino_x
+    mov cl, dino_y
+    add cl, pati_y_ori
+    call PATINETASP
+    ret
+dibujar_dino endp
+
+dibujar_obs proc
+    mov bl, obstaculo_x
+    mov cl, obstaculo_y
+    call OBSTACULOSP
+    ret
+dibujar_obs endp
+
+dibujar_moneda proc
+    mov bl, moneda_x
+    mov cl, moneda_y
+    call MONEDASP
+    ret
+dibujar_moneda endp
+
+obstaculo_color_leer proc
+    CMP SI, 2
+    JBE esCactus
+    CMP SI, 4
+    JBE esSenal
+    CMP SI, 6
+    JBE esCactus
+    CMP SI, 8
+    JBE esSenal
+    mov al, ship_color
+    JMP finLecturaColorObstaculo
+esCactus:
+    mov al, cactus_color
+    JMP finLecturaColorObstaculo
+esSenal:
+    mov al, senal_color
+finLecturaColorObstaculo:
+    ret
+obstaculo_color_leer endp
+
+resetMoneda proc
+    PUSH BX
+    mov bl, moneda_x_ori        ; SETEO LA MONEDA EN EL X ORIGINAL PARA CUANDO VUELVE DEL GAME OVER
+    mov moneda_x, bl
+    mov moneda_colision, 0
+    POP BX
+    RET
+resetMoneda endp
 end

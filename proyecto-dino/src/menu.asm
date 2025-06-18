@@ -4,7 +4,7 @@
 .data
     titulo      db 'Dino', 0
     opciones    db 'Jugar', 0
-                db 'Ver Records', 0
+                db 'Ver Creditos', 0
                 db 'Salir', 0
     opcion_actual       db 0             ; 0=Jugar, 1=Ver Records, 2=Salir
     fila_titulo         db 5
@@ -17,18 +17,22 @@
     col_msjGOv          db 10
     msg_game_over       db '*** GAME OVER ***', 0
     msg_game_over2      db '/|\ GAME OVER /|\', 0
+    msg_ganaste         db '(^-^)Felicidades, ganaste!(^-^)', 0
+    msg_ganaste2        db '(*-*)Felicidades, ganaste!(*-*)', 0
     msg_presiona_tecla  db 'Presiona cualquier tecla para volver al menu...', 0
-    exit        db 'Gracias por jugar!', 0
+    exit                db 'Gracias por jugar!',0Dh, 0Ah,'Dino robado, digo, basado en Dinosaurio de Chrome',0Dh, 0Ah,'Presiona W para saltar',0Dh, 0Ah,'Sistema de Procesamiento de Datos',0Dh, 0Ah,'1er Cuatri | 2025',0Dh, 0Ah,'Nicolas Marinkovic, Santiago Litvin, Matias Ortubia, Juan Martin Ricci Pierani', 0
 
 .code
-    EXTRN delay_new:PROC        ; -> ESPERA.ASM
-    PUBLIC MENU
-    PUBLIC dibujar_game_over
-
     EXTRN limpiar_pantalla:PROC ; -> LOGIC.ASM
     EXTRN delay_new:PROC        ; -> LOGIC.ASM
-    EXTRN modo_texto:PROC        ; -> LOGIC.ASM
-    EXTRN LEER_RECORDS:PROC     ; -> ARCHIVO.ASM
+    EXTRN modo_texto:PROC       ; -> LOGIC.ASM
+    ;EXTRN LEER_RECORDS:PROC     ; -> ARCHIVO.ASM
+    EXTRN score:PROC            ; -> SCORE.ASM
+
+    PUBLIC MENU
+    PUBLIC dibujar_game_over
+    PUBLIC dibujar_ganaste
+    PUBLIC dibujar_creditos
     
 ;-------------------------------------------------------------------------------------------------
 ;Función menu 
@@ -76,7 +80,7 @@ menu proc
         mov bl, opcion_actual
         cmp bl, 1
         jne  fin
-        call dibujar_records
+        call dibujar_creditos
     fin:
         call limpiar_pantalla
     pop ax
@@ -183,27 +187,27 @@ imprimir_cadena proc
         ret
 imprimir_cadena endp
 
-;-------------------------------------------------------------------------------------------------
-;Función dibujar_records 
-;		Realiza: 		
-;		Recibe: 		
-;		Devuelve: 	
-;-------------------------------------------------------------------------------------------------
+; ;-------------------------------------------------------------------------------------------------
+; ;Función dibujar_records 
+; ;		Realiza: 		
+; ;		Recibe: 		
+; ;		Devuelve: 	
+; ;-------------------------------------------------------------------------------------------------
 
-dibujar_records proc
-        CALL modo_texto
+; dibujar_records proc
+;         CALL modo_texto
         
-        call limpiar_pantalla
+;         call limpiar_pantalla
 
-        ; AGREGAR MENU PARA RECORDS
-        call LEER_RECORDS
-        ; AGREGAR MENU PARA RECORDS
+;         ; AGREGAR MENU PARA RECORDS
+;         call LEER_RECORDS
+;         ; AGREGAR MENU PARA RECORDS
 
-        ; Esperar tecla
-        mov ah, 00h
-        int 16h
-        ret
-dibujar_records endp
+;         ; Esperar tecla
+;         mov ah, 00h
+;         int 16h
+;         ret
+; dibujar_records endp
 
 ;-------------------------------------------------------------------------------------------------
 ; Función dibujar_game_over
@@ -271,5 +275,124 @@ pres_tecla:
     POP BX
     ret
 dibujar_game_over endp
+
+dibujar_ganaste proc
+
+    PUSH BX
+    PUSH DX
+    PUSH SI
+    
+    ; mov fila_titulo, 120
+    mov col_gameOv, 60
+muevo_win:
+    cmp col_gameOv, 29
+    je pres_tecla
+
+    call limpiar_pantalla
+    ; Mostrar "Game Over"
+    mov dh, fila_titulo     ; Fila
+    add dh, 5
+    mov dl, col_gameOv      ; Columna centrada aproximadamente
+    mov si, offset msg_ganaste
+    mov bl, 06h   ; Atributo resaltado
+    call imprimir_cadena
+    dec col_gameOv
+    call delay_new
+    call delay_new
+    call delay_new
+    call delay_new
+    call delay_new
+    call delay_new
+jmp muevo_win2
+
+muevo_win2:
+    cmp col_gameOv, 29
+    je pres_tecla_w
+
+    call limpiar_pantalla
+    ; Mostrar "Felicitaciones, ganaste!"
+    mov dh, fila_titulo     ; Fila
+    add dh, 5
+    mov dl, col_gameOv      ; Columna centrada aproximadamente
+    mov si, offset msg_ganaste2
+    mov bl, 06h   ; Atributo resaltado
+    call imprimir_cadena
+    dec col_gameOv
+    call delay_new
+    call delay_new
+    call delay_new
+    call delay_new
+    call delay_new
+    call delay_new
+jmp muevo_win
+
+pres_tecla_w:
+    ; Mostrar instrucción para volver
+    mov dh, fila_inicio
+    add dh, 5
+    mov dl, col_msjGOv
+    mov si, offset msg_presiona_tecla
+    mov bl, [normal_attr]
+    call imprimir_cadena
+
+    ; Esperar tecla
+    mov ah, 00h
+    int 16h
+
+    POP SI
+    POP DX
+    POP BX
+    ret
+
+dibujar_ganaste endp
+
+dibujar_creditos proc
+
+    PUSH BX
+    PUSH DX
+    PUSH SI
+    
+    mov fila_titulo, 30
+    ;mov col_gameOv, 60
+muevo_creditos:
+    cmp fila_titulo, 1
+    je pres_tecla_c
+
+    call limpiar_pantalla
+    ; Mostrar "Game Over"
+    mov dh, fila_titulo     ; Fila
+    add dh, 5
+    mov dl, col_gameOv      ; Columna centrada aproximadamente
+    mov si, offset exit
+    mov bl, 02h   ; Atributo resaltado
+    call imprimir_cadena
+    dec fila_titulo
+    call delay_new
+    call delay_new
+    call delay_new
+    call delay_new
+    call delay_new
+    call delay_new
+jmp muevo_creditos
+
+pres_tecla_c:
+    ; Mostrar instrucción para volver
+    mov dh, fila_inicio
+    add dh, 5
+    mov dl, col_msjGOv
+    mov si, offset msg_presiona_tecla
+    mov bl, [normal_attr]
+    call imprimir_cadena
+
+    ; Esperar tecla
+    mov ah, 00h
+    int 16h
+
+    POP SI
+    POP DX
+    POP BX
+    ret
+
+dibujar_creditos endp
 
 end
